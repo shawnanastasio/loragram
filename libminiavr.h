@@ -20,12 +20,12 @@
 #ifndef LIBMINIAVR_H
 #define LIBMINIAVR_H
 
+#include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <avr/io.h>
 
-/**
- */
 #ifdef LIBMINIAVR_DONT_HIDE_ARRAYS
 #define MAYBE_STATIC
 #else
@@ -56,10 +56,15 @@ struct pin_mapping {
 /* MCU-specific definitions */
 #if defined(__AVR_ATmega328P__)
 
-/* Get the offset of the corresponding DDR/PIN register
- * from a port */
+/**
+ * Get the offset of the corresponding DDR/PIN register
+ * from a port
+ */
 #define DDR_FROM_PORT(port_addr) ((uint8_t *)((uint16_t)(port_addr) - 0x1))
 #define PIN_FROM_PORT(port_addr) ((uint8_t *)((uint16_t)(port_addr) - 0x2))
+
+/* ATMega328P only has 1 USART */
+#define USART_COUNT 1
 
 #else
 #error "No support for your MCU, please submit an issue or PR."
@@ -96,7 +101,7 @@ const MAYBE_STATIC struct pin_mapping pins[] = {
 extern void digital_write_asm(uint8_t pin, uint8_t state);
 extern void pin_mode_asm(uint8_t pin, uint8_t mode);
 
-/* Public function prototypes */
+/* Public function prototypes - GPIO */
 
 enum pin_mode {
     OUTPUT,
@@ -164,5 +169,91 @@ static inline void digital_write(uint8_t pin, uint8_t state) {
     }
 }
 
+/* Public function prototypes - USART */
+struct serial_ringbuf {
+    uint8_t buf[256];
+    uint8_t pos_start;
+    uint8_t pos_end;
+};
+
+struct serial_port {
+    uint8_t udr;
+    uint8_t ucsra;
+    uint8_t ucsrb;
+    uint8_t ucsrc;
+    uint8_t ubrrh;
+    uint8_t ubrrl;
+    volatile struct serial_ringbuf tx_buf;
+    volatile struct serial_ringbuf rx_buf;
+    FILE iostream;
+};
+
+#if USART_COUNT >= 1
+extern struct serial_port *serial0;
+#endif
+#if USART_COUNT >= 2
+#error "Fill in pointer declarations here."
+#endif
+
+/**
+ * Initialize a UART
+ *
+ * @param port serial port to initialize
+ * @param baud baud rate to sue
+ */
+void serial_begin(struct serial_port *port, uint32_t baud);
+
+/**
+ * Write bytes to a serial port
+ *
+ * @param port  serial port to write to
+ * @param buf   buffer to read from
+ * @param count number of bytes to write
+ * @return      number of bytes written
+ */
+uint8_t serial_write(struct serial_port *port, uint8_t *buf, uint8_t count);
+
+/**
+ * Write bytes to a serial port (blocking)
+ * Same as serial_write but will block until space is free in the buffer
+ */
+void serial_write_blocking(struct serial_port *port, uint8_t *buf, uint8_t count);
+
+/**
+ * Read bytes from a serial port
+ *
+ * @param port    port to read from
+ * @param buf_out buffer to write to
+ * @param count   maximum number of bytes to write
+ * @return        number of bytes read
+ */
+uint8_t serial_read(struct serial_port *port, uint8_t *buf_out, uint8_t count);
+
+/**
+ * Read bytes from a serial port
+ * Same as serial_read but will block until the out buffer can be filled
+ */
+void serial_read_blocking(struct serial_port *port, uint8_t *buf_out, uint8_t count);
+
+/**
+ * Get the number of bytes that can currently be read from the serial port
+ *
+ * @param port  port to check
+ * @return      number of bytes ready to read
+ */
+uint8_t serial_available(struct serial_port *port);
+
+/**
+ * Read bytes from a serial port until a delimiter byte is encountered, or
+ * the buffer is full
+ *
+ * @param port      port to read from
+ * @param buf_out   buffer to write to
+ * @param count     maximum number of bytes to write
+ * @param delimiter stop reading when this byte is encountered
+ * @return          number of bytes read
+ */
+uint8_t serial_read_until(struct serial_port *port, uint8_t *buf_out, uint8_t count,
+                          uint8_t delimiter);
 
 #endif /* LIBMINIAVR_H */
