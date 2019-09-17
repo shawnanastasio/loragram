@@ -5,8 +5,7 @@
  *
  * libminiavr is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * the Free Software Foundation, version 3 of the License.
  *
  * libminiavr is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -71,30 +70,10 @@ struct pin_mapping {
 #endif
 
 /* Board-specific definitions */
-#ifdef ARDUINO_AVR_UNO
-const MAYBE_STATIC struct pin_mapping pins[] = {
-    /* UNO pins 0-7 are PORTD */
-    {(uint16_t)&PORTD, 1 << 0},
-    {(uint16_t)&PORTD, 1 << 1},
-    {(uint16_t)&PORTD, 1 << 2},
-    {(uint16_t)&PORTD, 1 << 3},
-    {(uint16_t)&PORTD, 1 << 4},
-    {(uint16_t)&PORTD, 1 << 5},
-    {(uint16_t)&PORTD, 1 << 6},
-    {(uint16_t)&PORTD, 1 << 7},
+#define LIBMINIAVR_PRIV
+#include <boards/arduino/uno.h>
+#undef LIBMINIAVR_PRIV
 
-    /* UNO pins 8-13 are PORTB */
-    {(uint16_t)&PORTB, 1 << 0},
-    {(uint16_t)&PORTB, 1 << 1},
-    {(uint16_t)&PORTB, 1 << 2},
-    {(uint16_t)&PORTB, 1 << 3},
-    {(uint16_t)&PORTB, 1 << 4},
-    {(uint16_t)&PORTB, 1 << 5},
-};
-
-#else
-#error "No support for your board pinout, please submit an issue or PR"
-#endif
 
 /* Private function prototypes - don't call these directly */
 

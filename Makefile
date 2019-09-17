@@ -19,7 +19,7 @@ CFLAGS:=-mmcu=$(MCU) -D$(BOARD) -DF_CPU=$(F_CPU) -Os
 .PHONY all: $(BIN)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $< -I.
+	$(CC) $(CFLAGS) -o $@ -c $< -Iinclude
 
 $(BIN): $(DEPS)
 	$(AR) rcs $@ $(DEPS)
