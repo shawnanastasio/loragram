@@ -28,16 +28,23 @@ asm(
 ".global pin_mode_asm\n"
 "pin_mode_asm:\n"
     /* Load array addr into X */
-    "ldi r26, lo8(pins)\n"
-    "ldi r27, hi8(pins)\n"
+    "ldi r26, lo8(libminiavr_board_pins)\n"
+    "ldi r27, hi8(libminiavr_board_pins)\n"
 
     /* Double pin no. to get array offset */
     "lsl r24\n"
+#ifdef NEED_16BIT_IO_PTR
+    "lsl r24\n" /* Double again to account for larger ptr */
+#endif
     "add r26, r24\n"
 
     /* Load port and bit into Z, r20 respectively */
     "ld r30, X+\n"
-    "clr r31\n"
+#ifdef NEED_16BIT_IO_PTR
+    "ld r31, X+\n" /* Load top bits of pointer */
+#else
+    "clr r31\n" /* Set top bits to 0 */
+#endif
     "ld r20, X\n"
 
     /* load DDR value */
@@ -57,7 +64,7 @@ asm(
     "and r18, r20\n"
 
     /* flush DDR */
-    "st Z, r18\n" // 15
+    "st Z, r18\n"
 
     /* set pullup if needed */
     "cpi r22, 2\n"
@@ -80,16 +87,23 @@ asm(
 ".global digital_write_asm\n"
 "digital_write_asm:\n"
     /* Load array addr into X */
-    "ldi r26, lo8(pins)\n"
-    "ldi r27, hi8(pins)\n"
+    "ldi r26, lo8(libminiavr_board_pins)\n"
+    "ldi r27, hi8(libminiavr_board_pins)\n"
 
     /* Double pin no. to get array offset */
     "lsl r24\n"
+#ifdef NEED_16BIT_IO_PTR
+    "lsl r24\n" /* Double again to account for larger ptr */
+#endif
     "add r26, r24\n"
 
     /* Load port and bit into Z, r20 respectively */
     "ld r30, X+\n"
-    "clr r31\n"
+#ifdef NEED_16BIT_IO_PTR
+    "ld r31, X+\n" /* Load top bits of pointer */
+#else
+    "clr r31\n" /* Set top bits to 0 */
+#endif
     "ld r20, X\n"
 
     /* load PORT value */
@@ -106,6 +120,6 @@ asm(
     /* LOW, flush, ret */
     "2: com r20\n"
     "and r18, r20\n"
-    "st Z, r18\n" // 15
+    "st Z, r18\n"
     "ret"
 );

@@ -18,6 +18,12 @@ HEX:=$(BIN:.elf=.hex)
 CC:=avr-gcc
 OBJCOPY:=avr-objcopy
 
+# AVRdude settings
+PROGRAMMER:=arduino
+PARTNO:=$(MCU)
+
+include ../../board.inc
+
 CFLAGS:=-mmcu=$(MCU) -D$(BOARD) -DF_CPU=$(F_CPU) -Os
 
 .PHONY all: checklibrary $(HEX)
@@ -35,7 +41,7 @@ $(HEX): $(BIN)
 	$(OBJCOPY) -R .eeprom -O ihex $< $@
 
 upload: $(HEX)
-	avrdude -c arduino -p $(MCU) -P $(PORT) -U flash:w:$<
+	avrdude -c $(PROGRAMMER) -p $(PARTNO) -P $(PORT) $(AVRDUDE_EXTRA) -U flash:w:$<
 
 clean:
 	rm -f $(DEPS)

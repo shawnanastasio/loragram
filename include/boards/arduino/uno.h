@@ -25,7 +25,7 @@
 
 #ifdef ARDUINO_AVR_UNO
 
-const MAYBE_STATIC struct pin_mapping pins[] = {
+const MAYBE_STATIC struct pin_mapping libminiavr_board_pins[] = {
     /* UNO pins 0-7 are PORTD */
     {(uint16_t)&PORTD, 1 << 0},
     {(uint16_t)&PORTD, 1 << 1},

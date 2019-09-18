@@ -106,7 +106,34 @@ static struct serial_port serial_ports[USART_COUNT + 1] = {
     },
 #endif
 #if USART_COUNT >= 2
-#error "Fill in registers here."
+    {
+        .udr = (uint16_t)&UDR1,
+        .ucsra = (uint16_t)&UCSR1A,
+        .ucsrb = (uint16_t)&UCSR1B,
+        .ucsrc = (uint16_t)&UCSR1C,
+        .ubrrh = (uint16_t)&UBRR1H,
+        .ubrrl = (uint16_t)&UBRR1L
+    },
+#endif
+#if USART_COUNT >= 3
+    {
+        .udr = (uint16_t)&UDR2,
+        .ucsra = (uint16_t)&UCSR2A,
+        .ucsrb = (uint16_t)&UCSR2B,
+        .ucsrc = (uint16_t)&UCSR2C,
+        .ubrrh = (uint16_t)&UBRR2H,
+        .ubrrl = (uint16_t)&UBRR2L
+    },
+#endif
+#if USART_COUNT >= 4
+    {
+        .udr = (uint16_t)&UDR3,
+        .ucsra = (uint16_t)&UCSR3A,
+        .ucsrb = (uint16_t)&UCSR3B,
+        .ucsrc = (uint16_t)&UCSR3C,
+        .ubrrh = (uint16_t)&UBRR3H,
+        .ubrrl = (uint16_t)&UBRR3L
+    },
 #endif
     {}, // NULL delimiter
 };
@@ -115,7 +142,13 @@ static struct serial_port serial_ports[USART_COUNT + 1] = {
 struct serial_port *serial0 = &serial_ports[0];
 #endif
 #if USART_COUNT >= 2
-#error "Fill in pointers here."
+struct serial_port *serial1 = &serial_ports[1];
+#endif
+#if USART_COUNT >= 3
+struct serial_port *serial2 = &serial_ports[2];
+#endif
+#if USART_COUNT >= 4
+struct serial_port *serial3 = &serial_ports[3];
 #endif
 
 __attribute__((always_inline))
@@ -126,53 +159,46 @@ static inline uint16_t baud_to_ubrr(uint32_t baud) {
 /* ISRs */
 
 // Called whenever a byte is ready to be flushed from the RX buf
-ISR(USART_RX_vect) {
-#if USART_COUNT > 1
-    // Find UART that triggered the interrupt (RXC set)
-    struct serial_port *port;
-    for (port=&serial_ports[0]; port; port++) {
-        if (REG(port->ucsra) & UCSRA_RXC)
-            break;
+#define USART_RX_ISR(vector, port) \
+    ISR(vector) {\
+        /* Flush byte */ \
+        uint8_t byte = REG(port->udr); \
+        /* Insert into ringbuf if there's space */ \
+        if (ringbuf_free_space(&port->rx_buf) > 0) \
+            port->rx_buf.buf[port->rx_buf.pos_end++] = byte; \
     }
-    if (!port)
-        return; // None of the USARTs are ready??
-#else
-    struct serial_port *port = serial0;
-#endif
-
-    // Flush byte
-    uint8_t byte = REG(port->udr);
-
-    // Insert into ringbuf if there's space
-    if (ringbuf_free_space(&port->rx_buf) > 0) {
-        port->rx_buf.buf[port->rx_buf.pos_end++] = byte;
-    }
-}
 
 // Called whenever the TX buffer is ready to be written to
-ISR(USART_UDRE_vect) {
-#if USART_COUNT > 1
-    // Find UART that triggered the interrupt (UDRE set)
-    struct serial_port *port;
-    for (port=&serial_ports[0]; port; port++) {
-        if (REG(port->ucsra) & UCSRA_UDRE)
-            break;
+#define USART_UDRE_ISR(vector, port) \
+    ISR(vector) { \
+        if (ringbuf_available(&port->tx_buf) == 0) { \
+            /* No bytes in the tx ringbuf, disable UDR interrupts */ \
+            REG(port->ucsrb) &= ~UCSRB_UDRIE; \
+            return; \
+        } \
+        uint8_t byte = port->tx_buf.buf[port->tx_buf.pos_start++]; \
+        REG(port->udr) = byte; \
     }
-    if (!port)
-        return; // None of the USARTs are ready??
-#else
-    struct serial_port *port = serial0;
+
+#if USART_COUNT == 1
+USART_RX_ISR(USART_RX_vect, serial0)
+USART_UDRE_ISR(USART_UDRE_vect, serial0)
+#elif USART_COUNT >= 2
+USART_RX_ISR(USART0_RX_vect, serial0)
+USART_UDRE_ISR(USART0_UDRE_vect, serial0)
+
+USART_RX_ISR(USART1_RX_vect, serial1)
+USART_UDRE_ISR(USART1_UDRE_vect, serial0)
+#endif
+#if USART_COUNT >= 3
+USART_RX_ISR(USART2_RX_vect, serial2)
+USART_UDRE_ISR(USART2_UDRE_vect, serial2)
+#endif
+#if USART_COUNT >= 4
+USART_RX_ISR(USART3_RX_vect, serial3)
+USART_UDRE_ISR(USART3_UDRE_vect, serial3)
 #endif
 
-    if (ringbuf_available(&port->tx_buf) == 0) {
-        // No bytes in the tx ringbuffer, disable UDR interrupts.
-        REG(port->ucsrb) &= ~UCSRB_UDRIE;
-        return;
-    }
-
-    uint8_t byte = port->tx_buf.buf[port->tx_buf.pos_start++];
-    REG(port->udr) = byte;
-}
 
 /* Low-level Serial I/O API */
 

@@ -47,14 +47,6 @@
 #warning "Old GCC versions may not optimize some routines properly. Please upgrade."
 #endif
 
-struct pin_mapping {
-    uint8_t port; /* Data Space Address of PORT */
-    uint8_t bit; /* Bitmask that controls pin */
-};
-
-/* MCU-specific definitions */
-#if defined(__AVR_ATmega328P__)
-
 /**
  * Get the offset of the corresponding DDR/PIN register
  * from a port
@@ -62,21 +54,41 @@ struct pin_mapping {
 #define DDR_FROM_PORT(port_addr) ((uint8_t *)((uint16_t)(port_addr) - 0x1))
 #define PIN_FROM_PORT(port_addr) ((uint8_t *)((uint16_t)(port_addr) - 0x2))
 
-/* ATMega328P only has 1 USART */
+/* MCU-specific definitions */
+#if defined(__AVR_ATmega328P__)
+
 #define USART_COUNT 1
+
+#elif defined(__AVR_ATmega2560__)
+
+#define USART_COUNT 4
+
+/* ATmega2560 needs a u16 to store all possible I/O registers */
+#define NEED_16BIT_IO_PTR 1
 
 #else
 #error "No support for your MCU, please submit an issue or PR."
 #endif
 
+struct pin_mapping {
+#ifndef NEED_16BIT_IO_PTR
+    uint8_t port; /* Data Space Address of PORT */
+    uint8_t bit; /* Bitmask that controls pin */
+#else
+    uint16_t port;
+    uint8_t bit;
+    uint8_t _pad;
+#endif
+};
+
 /* Board-specific definitions */
 #define LIBMINIAVR_PRIV
 #include <boards/arduino/uno.h>
+#include <boards/arduino/mega.h>
 #undef LIBMINIAVR_PRIV
 
 
 /* Private function prototypes - don't call these directly */
-
 extern void digital_write_asm(uint8_t pin, uint8_t state);
 extern void pin_mode_asm(uint8_t pin, uint8_t mode);
 
@@ -103,10 +115,9 @@ static inline void pin_mode(uint8_t pin, uint8_t mode) {
      * which is faster than whatever GCC would spit out
      */
     if (__builtin_constant_p(pin) && __builtin_constant_p(mode)) {
-        const struct pin_mapping *mapping = &pins[pin];
+        const struct pin_mapping *mapping = &libminiavr_board_pins[pin];
         uint8_t bit = mapping->bit;
-        volatile uint8_t *port = (volatile uint8_t *)
-                                    ((uint16_t)mapping->port);
+        volatile uint8_t *port = (volatile uint8_t *)((uint16_t)mapping->port);
 
         if (mode == OUTPUT) {
             *DDR_FROM_PORT(port) |= bit;
@@ -136,9 +147,8 @@ static inline void digital_write(uint8_t pin, uint8_t state) {
      * which is faster than whatever GCC would spit out
      */
     if (__builtin_constant_p(pin) && __builtin_constant_p(state)) {
-        volatile uint8_t *port = (volatile uint8_t *)
-                                    ((uint16_t)pins[pin].port);
-        const uint8_t bit = pins[pin].bit;
+        volatile uint8_t *port = (volatile uint8_t *)((uint16_t)libminiavr_board_pins[pin].port);
+        const uint8_t bit = libminiavr_board_pins[pin].bit;
         if (state)
             *port |= bit;
         else
@@ -156,12 +166,21 @@ struct serial_ringbuf {
 };
 
 struct serial_port {
+#ifndef NEED_16BIT_IO_PTR
     uint8_t udr;
     uint8_t ucsra;
     uint8_t ucsrb;
     uint8_t ucsrc;
     uint8_t ubrrh;
     uint8_t ubrrl;
+#else
+    uint16_t udr;
+    uint16_t ucsra;
+    uint16_t ucsrb;
+    uint16_t ucsrc;
+    uint16_t ubrrh;
+    uint16_t ubrrl;
+#endif
     volatile struct serial_ringbuf tx_buf;
     volatile struct serial_ringbuf rx_buf;
     FILE iostream;
@@ -171,8 +190,15 @@ struct serial_port {
 extern struct serial_port *serial0;
 #endif
 #if USART_COUNT >= 2
-#error "Fill in pointer declarations here."
+extern struct serial_port *serial1;
 #endif
+#if USART_COUNT >= 3
+extern struct serial_port *serial2;
+#endif
+#if USART_COUNT >= 4
+extern struct serial_port *serial3;
+#endif
+
 
 /**
  * Initialize a UART
