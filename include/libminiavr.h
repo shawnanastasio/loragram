@@ -51,17 +51,20 @@
  * Get the offset of the corresponding DDR/PIN register
  * from a port
  */
-#define DDR_FROM_PORT(port_addr) ((uint8_t *)((uint16_t)(port_addr) - 0x1))
-#define PIN_FROM_PORT(port_addr) ((uint8_t *)((uint16_t)(port_addr) - 0x2))
+#define DDR_FROM_PORT(port_addr) ((volatile uint8_t *)((uint16_t)(port_addr) - 0x1))
+#define PIN_FROM_PORT(port_addr) ((volatile uint8_t *)((uint16_t)(port_addr) - 0x2))
 
 /* MCU-specific definitions */
 #if defined(__AVR_ATmega328P__)
 
 #define USART_COUNT 1
+#define USE_ASM_PIN_ROUTINES 1
 
 #elif defined(__AVR_ATmega2560__)
 
 #define USART_COUNT 4
+/* Disable ASM routines on 2560 for now */
+#define USE_ASM_PIN_ROUTINES 0
 
 /* ATmega2560 needs a u16 to store all possible I/O registers */
 #define NEED_16BIT_IO_PTR 1
@@ -114,7 +117,7 @@ static inline void pin_mode(uint8_t pin, uint8_t mode) {
      * instructions, otherwise use the assembly implementation
      * which is faster than whatever GCC would spit out
      */
-    if (__builtin_constant_p(pin) && __builtin_constant_p(mode)) {
+    if (!USE_ASM_PIN_ROUTINES || (__builtin_constant_p(pin) && __builtin_constant_p(mode))) {
         const struct pin_mapping *mapping = &libminiavr_board_pins[pin];
         uint8_t bit = mapping->bit;
         volatile uint8_t *port = (volatile uint8_t *)((uint16_t)mapping->port);
@@ -126,6 +129,7 @@ static inline void pin_mode(uint8_t pin, uint8_t mode) {
             *port |= bit;
         } else {
             *DDR_FROM_PORT(port) &= ~bit;
+            *port &= ~bit;
         }
     } else {
         pin_mode_asm(pin, mode);
@@ -146,7 +150,7 @@ static inline void digital_write(uint8_t pin, uint8_t state) {
      * instruction, otherwise use the assembly implementation
      * which is faster than whatever GCC would spit out
      */
-    if (__builtin_constant_p(pin) && __builtin_constant_p(state)) {
+    if (!USE_ASM_PIN_ROUTINES || (__builtin_constant_p(pin) && __builtin_constant_p(state))) {
         volatile uint8_t *port = (volatile uint8_t *)((uint16_t)libminiavr_board_pins[pin].port);
         const uint8_t bit = libminiavr_board_pins[pin].bit;
         if (state)
@@ -156,6 +160,19 @@ static inline void digital_write(uint8_t pin, uint8_t state) {
     } else {
         digital_write_asm(pin, state);
     }
+}
+
+/**
+ * digital_read - Read a GPIO pin's state
+ *
+ * @param pin   board pin number to read
+ * @return      non-zero for HIGH, zero for LOW
+ */
+__attribute__((always_inline))
+static inline uint8_t digital_read(uint8_t pin) {
+    volatile uint8_t *port = (volatile uint8_t *)((uint16_t)libminiavr_board_pins[pin].port);
+    const uint8_t bit = libminiavr_board_pins[pin].bit;
+    return *PIN_FROM_PORT(port) & bit;
 }
 
 /* Public function prototypes - USART */

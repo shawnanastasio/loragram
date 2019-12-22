@@ -30,7 +30,7 @@
 
 #include "libminiavr.h"
 
-#define REG(x) (*((uint8_t *)(uint16_t)(x)))
+#define REG(x) (*((volatile uint8_t *)(uint16_t)(x)))
 #define DIV_ROUND_CLOSEST(dividend, divisor) (((dividend) + ((divisor) / 2)) / (divisor))
 #define ARRAY_SIZE(x) (sizeof((x)) / sizeof(*(x)))
 #define MIN(x, y) ((x) > (y) ? (y) : (x))
