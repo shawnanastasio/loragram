@@ -86,13 +86,24 @@ static inline uint8_t ringbuf_free_space(const volatile struct serial_ringbuf *r
     else if (rb->pos_start < rb->pos_end)
         return (sizeof(rb->buf) - 1) - (rb->pos_end - rb->pos_start);
     else // rb->pos_start > rb->pos_end
-        return rb->pos_start - rb->pos_end;
+        return rb->pos_start - rb->pos_end - 1;
 }
 
 __attribute__((always_inline))
 static inline uint8_t ringbuf_available(const volatile struct serial_ringbuf *rb) {
     return (sizeof(rb->buf) - 1) - ringbuf_free_space(rb);
 }
+
+__attribute__((always_inline))
+static inline uint8_t ringbuf_pop(volatile struct serial_ringbuf *rb) {
+    return rb->buf[rb->pos_start++];
+}
+
+__attribute__((always_inline))
+static inline void ringbuf_push(volatile struct serial_ringbuf *rb, uint8_t b) {
+    rb->buf[rb->pos_end++] =  b;
+}
+
 
 static struct serial_port serial_ports[USART_COUNT + 1] = {
 #if USART_COUNT >= 1
@@ -165,7 +176,7 @@ static inline uint16_t baud_to_ubrr(uint32_t baud) {
         uint8_t byte = REG(port->udr); \
         /* Insert into ringbuf if there's space */ \
         if (ringbuf_free_space(&port->rx_buf) > 0) \
-            port->rx_buf.buf[port->rx_buf.pos_end++] = byte; \
+            ringbuf_push(&port->rx_buf, byte); \
     }
 
 // Called whenever the TX buffer is ready to be written to
@@ -176,7 +187,7 @@ static inline uint16_t baud_to_ubrr(uint32_t baud) {
             REG(port->ucsrb) &= ~UCSRB_UDRIE; \
             return; \
         } \
-        uint8_t byte = port->tx_buf.buf[port->tx_buf.pos_start++]; \
+        uint8_t byte = ringbuf_pop(&port->tx_buf); \
         REG(port->udr) = byte; \
     }
 
@@ -206,7 +217,7 @@ __attribute__((always_inline))
 static inline void serial_write_impl(struct serial_port *port, uint8_t *buf, uint8_t count) {
     // Flush buffer
     while (count-- > 0)
-        port->tx_buf.buf[port->tx_buf.pos_end++] = *(buf++);
+        ringbuf_push(&port->tx_buf, *(buf++));
 
     // Enable UDR interrupt
     REG(port->ucsrb) |= UCSRB_UDRIE;
@@ -233,7 +244,7 @@ __attribute__((always_inline))
 static inline uint8_t serial_read_impl(struct serial_port *port, uint8_t *buf_out, uint8_t count) {
     uint8_t c = count;
     while (c-- > 0)
-        *(buf_out++) = port->rx_buf.buf[port->rx_buf.pos_start++];
+        *(buf_out++) = ringbuf_pop(&port->rx_buf);
 
     return count;
 }
@@ -265,7 +276,7 @@ uint8_t serial_read_until(struct serial_port *port, uint8_t *buf_out, uint8_t co
             if (buf_i == count)
                 goto out;
 
-            uint8_t cur = port->rx_buf.buf[port->rx_buf.pos_start++];
+            uint8_t cur = ringbuf_pop(&port->rx_buf);
             buf_out[buf_i++] = cur;
 
             if (cur == delimiter)
@@ -291,7 +302,7 @@ static int file_put(char c, FILE *f) {
     // Block for free space
     while (ringbuf_free_space(&port->tx_buf) == 0) ;
 
-    port->tx_buf.buf[port->tx_buf.pos_end++] = c;
+    ringbuf_push(&port->tx_buf, c);
 
     // Enable UDR interrupt
     REG(port->ucsrb) |= UCSRB_UDRIE;
