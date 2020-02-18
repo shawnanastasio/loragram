@@ -14,7 +14,7 @@ CC:=avr-gcc
 AR:=avr-ar
 OBJCOPY:=avr-objcopy
 
-CFLAGS:=-mmcu=$(MCU) -D$(BOARD) -DF_CPU=$(F_CPU) -Os
+CFLAGS:=-Wall -mmcu=$(MCU) -D$(BOARD) -DF_CPU=$(F_CPU) -Os
 
 .PHONY all: $(BIN)
 

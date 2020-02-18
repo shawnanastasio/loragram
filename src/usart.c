@@ -306,6 +306,8 @@ static int file_put(char c, FILE *f) {
 
     // Enable UDR interrupt
     REG(port->ucsrb) |= UCSRB_UDRIE;
+
+    return 0;
 }
 
 static int file_get(FILE *f) {
