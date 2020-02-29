@@ -30,6 +30,7 @@
 #include <util/delay.h>
 
 #include "libminiavr.h"
+#include "spi_master.h"
 
 int main(void) {
     // Initalize USART0 at 115200 baud

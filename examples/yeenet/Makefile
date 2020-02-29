@@ -35,7 +35,7 @@ checklibrary:
 	$(CC) $(CFLAGS) -o $@ -c $< $(LIBRARY_CFLAGS)
 
 $(BIN): $(DEPS)
-	$(CC) $(CFLAGS) $< -o $@ $(LIBRARY_CFLAGS)
+	$(CC) $(CFLAGS) $(DEPS) -o $@ $(LIBRARY_CFLAGS)
 
 $(HEX): $(BIN)
 	$(OBJCOPY) -R .eeprom -O ihex $< $@
