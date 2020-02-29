@@ -1,0 +1,6 @@
+libminiavr.a
+*.o
+*.elf
+*.hex
+.*.un~
+.*.swp
