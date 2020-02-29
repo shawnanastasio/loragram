@@ -4,7 +4,7 @@
 #include "lora.h"
 #include "rx_tx.h"
 
-void send_msg(struct lora_modem *lora, struct message *msg) {
+void send_msg(struct lora_modem *lora, uint8_t *msg) {
 
 }
 
@@ -12,8 +12,8 @@ void listen(struct lora_modem *lora) {
 
 }
 
-struct message* recv_msg(struct lora_modem *lora) {
-    struct message *msg;
+uint8_t* recv_msg(struct lora_modem *lora) {
+    uint8_t msg[255];
     return msg;
 }
 
