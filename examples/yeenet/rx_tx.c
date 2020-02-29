@@ -8,6 +8,10 @@ void send_msg(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t 
 
 }
 
+void listen(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin) {
+
+}
+
 struct message* recv_msg(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin) {
     struct message *msg;
     return msg;
