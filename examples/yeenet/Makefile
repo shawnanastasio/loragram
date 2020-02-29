@@ -24,7 +24,7 @@ PARTNO:=$(MCU)
 
 include ../../board.inc
 
-CFLAGS:=-mmcu=$(MCU) -D$(BOARD) -DF_CPU=$(F_CPU) -Os
+CFLAGS:=-mmcu=$(MCU) -D$(BOARD) -DF_CPU=$(F_CPU) -Os -Wall
 
 .PHONY all: checklibrary $(HEX)
 

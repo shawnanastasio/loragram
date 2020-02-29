@@ -31,13 +31,26 @@
 
 #include "libminiavr.h"
 #include "spi_master.h"
+#include "lora.h"
+
+#define RST_PIN 9
+#define SS_PIN 10
+#define IRQ_PIN 2
+
+static struct lora_modem lora0;
 
 int main(void) {
     // Initalize USART0 at 115200 baud
     serial_begin(serial0, 115200);
+    lora_setup(&lora0, RST_PIN, SS_PIN, IRQ_PIN);
+
+    lora_write_reg(&lora0, LORA_REG_OP_MODE, MODE_LORA | MODE_SLEEP);
+    _delay_ms(10);
+    //uint8_t new_mode = lora_read_reg(&lora0, LORA_REG_OP_MODE);
 
     for (;;) {
-        fprintf(&serial0->iostream, "hello\r\n");
+        uint8_t val = lora_read_reg(&lora0, 0x01);
+        fprintf(&serial0->iostream, "val of 0x01: %x\r\n", val);
         _delay_ms(1000);
     }
 }
