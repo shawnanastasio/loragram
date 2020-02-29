@@ -1,9 +1,17 @@
 #include  <avr/io.h>
 #include "libminiavr.h"
 #include "spi_master.h"
+
+#define MOSI_PIN 11
+#define MISO_PIN 12
+#define SCK_PIN 13
+
 void spi_manual_enable(sck_divider_t divider, clock_polarity_t cpol_bit,
                         data_order_t dord_bit, clock_phase_t cpha_bit) {
 	//configure clock divider for SCK
+    pin_mode(MOSI_PIN,OUTPUT);
+    pin_mode(MISO_PIN,INPUT);
+    pin_mode(SCK_PIN,OUTPUT);
 	switch(divider) {
 		case SCK_DIV_BY_2:
 			SPSR = SPSR | (1 << SPI2X);
