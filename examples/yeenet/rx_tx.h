@@ -6,11 +6,11 @@ struct message {
 
 };
 
-void send_msg(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin, struct message *msg);
+void send_msg(struct lora_modem *lora, struct message *msg);
 
-void listen(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin);
+void listen(struct lora_modem *lora);
 
-struct message* recv_msg(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin);
+struct message* recv_msg(struct lora_modem *lora);
 
-bool msg_rcvd(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin);
+bool msg_rcvd(struct lora_modem *lora);
 
