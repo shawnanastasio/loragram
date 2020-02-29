@@ -1,6 +1,6 @@
 libminiavr.a
-src/*.o
-examples/*/*.elf
-examples/*/*.hex
-examples/*/*.o
-
+*.o
+*.elf
+*.hex
+.*.un~
+.*.swp
