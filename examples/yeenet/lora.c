@@ -79,8 +79,7 @@ bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_
     spi_auto_enable(SPI_MODE_0, SCK_DIV_BY_32);
 
     // Change mode LORA + SLEEP
-    lora_write_reg_and_check(lora, LORA_REG_OP_MODE, MODE_LORA | MODE_SLEEP, 10);
-
+    lora_write_reg_and_check(lora, LORA_REG_OP_MODE, MODE_LORA | MODE_SLEEP, true);
     // Set registers
     for (size_t i=0; i<ARRAY_SIZE(LONGR_MODEM_CONFIG); i++) {
         if (!lora_write_reg_and_check(lora, LONGR_MODEM_CONFIG[i][0], LONGR_MODEM_CONFIG[i][1], 0)) {
@@ -90,7 +89,6 @@ bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_
 #endif
         }
     }
-
     return true;
 }
 
@@ -153,24 +151,14 @@ void lora_write_reg(struct lora_modem *lora, uint8_t reg, uint8_t val) {
 
 bool lora_write_reg_and_check(struct lora_modem *lora, uint8_t reg, uint8_t val, bool delay) {
     // Write register
-    digital_write(lora->cs_pin, 0);
-
-    spi_cycle(reg | WRITE_MASK);
-    spi_cycle(val);
-
-    digital_write(lora->cs_pin, 1);
+    lora_write_reg(lora, reg, val);
 
     // Delay
     if (delay)
         _delay_ms(10);
-
-    // Check that register write succeeded
-    digital_write(lora->cs_pin, 0);
-
-    spi_cycle(reg | WRITE_MASK);
-    uint8_t new_val = spi_cycle(0);
-
-    digital_write(lora->cs_pin, 1);
+    
+    //read reg
+    uint8_t new_val = lora_read_reg(lora, reg);
 
     // Return whether write succeeded
     return val == new_val;
