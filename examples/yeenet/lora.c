@@ -1,12 +1,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <util/delay.h>
 
 #include "libminiavr.h"
 #include "spi_master.h"
 #include "lora.h"
+
 
 #define ARRAY_SIZE(x) (sizeof((x)) / sizeof(*(x)))
 
@@ -85,12 +87,36 @@ bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_
         if (!lora_write_reg_and_check(lora, LONGR_MODEM_CONFIG[i][0], LONGR_MODEM_CONFIG[i][1], 0)) {
 #ifdef DEBUG
             fprintf(&serial0->iostream, "Failed to write reg: 0x%x\r\n", LONGR_MODEM_CONFIG[i][0]);
-            return false;
 #endif
+            return false;
         }
     }
+    
+#ifdef DEBUG
+    fprintf(&serial0->iostream,"Starting RNG generation\n\r");
+#endif
+    seed_random(lora);
     return true;
 }
+
+void seed_random(struct lora_modem *lora) {
+    uint32_t new_seed = 0;
+    lora_write_reg(lora,LORA_REG_OP_MODE,MODE_LORA | MODE_RXCON);
+    for(uint8_t i = 0;i<32;i++){
+        uint32_t val = lora_read_reg(lora, LORA_REG_RSSI_WIDEBAND);
+        _delay_ms(1);
+        new_seed = new_seed | ( (val&0x00000001) << i);   
+    }
+#ifdef DEBUG
+    fprintf(&serial0->iostream, "generated seed %lx\r\n",new_seed);
+#endif
+    srandom((long) new_seed); 
+    lora_write_reg(lora,LORA_REG_OP_MODE,MODE_LORA | MODE_STDBY);
+}
+
+uint32_t rand_32() {
+    return random();
+} 
 
 void lora_write_fifo(struct lora_modem *lora, uint8_t* buf, uint8_t len, uint8_t offset) {
     // Some assertions to check input data in DEBUG mode
