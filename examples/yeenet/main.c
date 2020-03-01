@@ -59,23 +59,24 @@ int main(void) {
 
 #if 1
     uint8_t buf[255];
+    lora_listen(&lora0);
     for(;;){
         for(int i = 0; i<255;i++) buf[i] = 0;
-        lora_listen(&lora0);
         if(serial_available(serial0)!=0){
             uint8_t n = serial_read_until(serial0, buf, sizeof(buf), '\r');
             lora_load_message(&lora0,buf);
-            
+
             uint8_t reg = lora_read_reg(&lora0,LORA_REG_OP_MODE);
-            uint8_t reg2 = lora_read_reg(&lora0,0x12);
+            uint8_t reg2 = lora_read_reg(&lora0, 0x12);
 
             // Wait for IRQ
             fprintf(&serial0->iostream,"waiting...mode:%x irq:%x\r\n",reg,reg2);
 
 
-            fprintf(&serial0->iostream,"tranmsititng\r\n"); 
+            fprintf(&serial0->iostream,"tranmsititng\r\n");
             lora_transmit(&lora0);
             fprintf(&serial0->iostream,"done transmitting\r\n");
+            lora_listen(&lora0);
         }
         enum lora_fifo_status msg_stat = lora_get_packet(&lora0,buf);
         fprintf(&serial0->iostream,"packet stat: %x\r\n",msg_stat);
@@ -87,12 +88,7 @@ int main(void) {
         }
         _delay_ms(500);
     }
-        
-        
-        
-        
 #endif
-
 
 #if 0
     lora_listen(&lora0);
@@ -185,7 +181,7 @@ int main(void) {
     }
 #endif
 
-#if 0
+#if 1
     for (;;) {
         // Receive packets using HLAPI
         lora_listen(&lora0);
