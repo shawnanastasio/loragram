@@ -7,7 +7,7 @@
 
 void send_msg(struct lora_modem *lora, uint8_t *msg);
 
-void listen(struct lora_modem *lora);
+void signal_listen(struct lora_modem *lora);
 
 uint8_t *recv_msg(struct lora_modem *lora);
 
