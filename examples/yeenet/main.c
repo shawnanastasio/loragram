@@ -44,13 +44,53 @@ int main(void) {
     serial_begin(serial0, 115200);
     lora_setup(&lora0, RST_PIN, SS_PIN, IRQ_PIN);
 
-    lora_write_reg(&lora0, LORA_REG_OP_MODE, MODE_LORA | MODE_SLEEP);
-    _delay_ms(10);
-    //uint8_t new_mode = lora_read_reg(&lora0, LORA_REG_OP_MODE);
+#if 0
+    for (;;) {
+        // Transmit a packet
+        uint8_t buf[15 + 1] = "no sana no life";
+        lora_write_fifo(&lora0, buf, 15, 0);
+        lora_write_reg(&lora0, REG_DIO_MAPPING_1, 0x40 /* TXDONE */);
+        lora_write_reg(&lora0, LORA_REG_OP_MODE, MODE_LORA | MODE_TX);
 
+        while (lora0.irq_seen);
+        fputs("GOT IRQ!\r\n", &serial0->iostream);
+        lora_dbg_print_irq(lora0.irq_data);
+        lora0.irq_seen = true;
+
+        _delay_ms(1000);
+    }
+#endif
+
+#if 1
+    for (;;) {
+        uint8_t buf[16];
+
+        // Receive a packet
+        lora_write_reg(&lora0, LORA_REG_OP_MODE, MODE_LORA | MODE_RXCON);
+        lora_write_reg(&lora0, REG_DIO_MAPPING_1, 0x00 /* RXDONE */);
+
+        while (lora0.irq_seen);
+        fputs("GOT IRQ!\r\n", &serial0->iostream);
+        lora_dbg_print_irq(lora0.irq_data);
+        lora0.irq_seen = true;
+
+        // Get FIFO ptr and read
+        uint8_t ptr = lora_read_reg(&lora0, LORA_REG_FIFO_RX_CUR_ADDR);
+        lora_read_fifo(&lora0, buf, 15, ptr);
+        buf[15] = 0;
+
+        fprintf(&serial0->iostream, "Got data: %s\n", buf);
+
+        _delay_ms(1000);
+    }
+#endif
+
+#if 0
     for (;;) {
         uint8_t val = lora_read_reg(&lora0, 0x01);
         fprintf(&serial0->iostream, "val of 0x01: %x\r\n", val);
         _delay_ms(1000);
     }
+#endif
+    for(;;);
 }
