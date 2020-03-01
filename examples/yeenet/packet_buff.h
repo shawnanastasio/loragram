@@ -9,6 +9,7 @@
 #define PKT_LEN 255
 
 typedef enum {
+    NULL_PKT,
     DATA,
     ACK,
     NAK
