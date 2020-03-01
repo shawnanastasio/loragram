@@ -67,7 +67,7 @@ int main(void) {
             lora_load_message(&lora0,buf);
             
             uint8_t reg = lora_read_reg(&lora0,LORA_REG_OP_MODE);
-            uint8_t reg2 = lora_read_reg(lora,0x12);
+            uint8_t reg2 = lora_read_reg(&lora0,0x12);
 
             // Wait for IRQ
             fprintf(&serial0->iostream,"waiting...mode:%x irq:%x\r\n",reg,reg2);
@@ -78,12 +78,14 @@ int main(void) {
             fprintf(&serial0->iostream,"done transmitting\r\n");
         }
         enum lora_fifo_status msg_stat = lora_get_packet(&lora0,buf);
+        fprintf(&serial0->iostream,"packet stat: %x\r\n",msg_stat);
         if(msg_stat == FIFO_GOOD){
             fprintf(&serial0->iostream,"got message:\r\n");
             fputs(buf,&serial0->iostream);
         }else if(msg_stat == FIFO_BAD){
             fprintf(&serial0->iostream, "bad packet\r\n");
         }
+        _delay_ms(500);
     }
         
         

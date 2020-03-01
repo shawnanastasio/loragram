@@ -227,7 +227,7 @@ bool lora_transmit(struct lora_modem *lora) {
     uint8_t reg2 = lora_read_reg(lora,0x12);
 
     // Wait for IRQ
-    while (lora->irq_seen) fprintf(&serial0->iostream,"waiting...mode:%x irq:%x\r\n",reg,reg2);
+    while (lora->irq_seen); 
     bool ret = lora->irq_data == LORA_MASK_IRQFLAGS_TXDONE;
     lora->irq_seen = true;
 
