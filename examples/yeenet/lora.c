@@ -211,7 +211,22 @@ uint32_t rand_32() {
     return random();
 }
 
-//void lora_load_message(uint8_t msg[LORA_255])
+void lora_load_message(struct lora_modem *lora, uint8_t msg[LORA_PACKET_SIZE]) {
+    lora_write_fifo(lora, msg, LORA_PACKET_SIZE, 0);
+}
+
+bool lora_transmit(struct lora_modem *lora) {
+    // Configure DIO0 to interrupt on TXDONE, switch to TX mode
+    lora_write_reg(lora, REG_DIO_MAPPING_1, 0x40 /* TXDONE */);
+    lora_write_reg(lora, LORA_REG_OP_MODE, MODE_LORA | MODE_TX);
+
+    // Wait for IRQ
+    while (lora->irq_seen);
+    bool ret = lora->irq_data == LORA_MASK_IRQFLAGS_TXDONE;
+    lora->irq_seen = true;
+
+    return ret;
+}
 
 //
 // Low-level LoRA API

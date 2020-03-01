@@ -1,6 +1,6 @@
 #pragma once
 
-#define LORA_PACKET_SIZE 255
+#define LORA_PACKET_SIZE 15
 
 #define WRITE_MASK 0x80
 
@@ -74,8 +74,14 @@ struct lora_modem {
     volatile bool irq_seen;
 };
 
-bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin);
+// High level API
 
+bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin);
+void lora_load_message(struct lora_modem *lora, uint8_t msg[LORA_PACKET_SIZE]);
+bool lora_transmit(struct lora_modem *lora);
+
+
+// Low level API
 void lora_write_fifo(struct lora_modem *lora, uint8_t *buf, uint8_t len, uint8_t offset);
 void lora_read_fifo(struct lora_modem *lora, uint8_t *buf, uint8_t len, uint8_t offset);
 
