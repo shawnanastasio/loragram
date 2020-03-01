@@ -8,13 +8,6 @@
 #define BRDCAST 0
 #define PKT_LEN 255
 
-typedef enum {
-    NULL_PKT,
-    DATA,
-    ACK,
-    NAK
-} packet_t;
-
 struct packet {
     uint8_t dest;
     uint8_t type;
