@@ -39,10 +39,134 @@
 
 static struct lora_modem lora0;
 
+static void serial_flush(struct serial_port *serial) {
+    while (serial_available(serial)) {
+        uint8_t buf;
+        serial_read(serial, &buf, 1);
+    }
+}
+
+enum serial_command {
+    CMD_HELLO = 1,
+    CMD_SEND = 2,
+    CMD_GET
+};
+
 int main(void) {
     // Initalize USART0 at 115200 baud
     serial_begin(serial0, 115200);
     lora_setup(&lora0, RST_PIN, SS_PIN, IRQ_PIN);
+
+#if 0
+    lora_listen(&lora0);
+    for (;;) {
+        // Receive command
+        while (serial_available(serial0) == 0);
+
+        uint8_t cmd;
+        serial_read_blocking(serial0, &cmd, 1);
+        switch(cmd) {
+
+        }
+    }
+#endif
+
+#if 1
+    fputs("Press any key to send a message.\r\n", &serial0->iostream);
+    lora_listen(&lora0);
+    for (;;) {
+        // Check if user input is available
+        if (serial_available(serial0) > 0) {
+            serial_flush(serial0);
+
+            // Prompt user for information
+            uint8_t recip[10];
+            uint8_t location[10];
+            uint8_t message[235];
+            uint8_t confirmation[2];
+
+            fputs("Recipient: ", &serial0->iostream);
+            uint8_t n = serial_read_until(serial0, recip, sizeof(recip), '\r');
+            recip[n - 1] = '\0';
+            serial_flush(serial0);
+            fputs("\r\n", &serial0->iostream);
+
+            fputs("Location: ", &serial0->iostream);
+            n = serial_read_until(serial0, location, sizeof(location), '\r');
+            location[n - 1] = '\0';
+            serial_flush(serial0);
+            fputs("\r\n", &serial0->iostream);
+
+            fputs("Message: ", &serial0->iostream);
+            n = serial_read_until(serial0, message, sizeof(message), '\r');
+            message[n - 1] = '\0';
+            serial_flush(serial0);
+            fputs("\r\n", &serial0->iostream);
+
+            // Format message and prompt for confirmation
+            fprintf(&serial0->iostream, "Recipient: %s\r\nLocation: %s\r\nMessage: %s\r\n", recip, location, message);
+            fputs("Send? (y/n) ", &serial0->iostream);
+            n = serial_read_until(serial0, confirmation, sizeof(confirmation), '\r');
+            confirmation[n - 1] = '\0';
+            serial_flush(serial0);
+            fputs("\r\n", &serial0->iostream);
+
+            if (confirmation[0] == 'y') {
+                fputs("Sending message.\r\n", &serial0->iostream);
+                uint8_t msgbuf[255];
+                memcpy(msgbuf, recip, sizeof(recip));
+                memcpy(msgbuf, location, sizeof(location));
+                memcpy(msgbuf, message, sizeof(message));
+
+                // Send message
+                lora_load_message(&lora0, msgbuf);
+                lora_transmit(&lora0);
+
+                // Switch back to listen mode
+                lora_listen(&lora0);
+            } else {
+                fputs("Cancelled.\r\n", &serial0->iostream);
+            }
+        }
+
+        // See if any packets were received
+        struct {
+            uint8_t recip[10];
+            uint8_t location[10];
+            uint8_t message[235];
+        } buf;
+
+        enum lora_fifo_status ret = lora_get_packet(&lora0, (uint8_t *)&buf);
+
+        if (ret == FIFO_BAD) {
+            fputs("Corrupted message received.\r\n", &serial0->iostream);
+        } else if (ret == FIFO_GOOD) {
+            fputs("Received Message!", &serial0->iostream);
+
+            fprintf(&serial0->iostream, "Recipient: %s\r\nLocation:%s\r\nMessage: %s\r\n", buf.recip, buf.location, buf.message);
+        }
+    }
+#endif
+
+#if 0
+    for (;;) {
+        // Receive packets using HLAPI
+        lora_listen(&lora0);
+
+        enum lora_fifo_status ret;
+        uint8_t buf[LORA_PACKET_SIZE + 1];
+        while ((ret = lora_get_packet(&lora0, buf)) == FIFO_EMPTY);
+
+        if (ret == FIFO_BAD) {
+            fputs("Bad packet received\r\n", &serial0->iostream);
+        } else {
+            buf[LORA_PACKET_SIZE] = '\0';
+            fprintf(&serial0->iostream, "Got data: %s\r\n", buf);
+        }
+
+        _delay_ms(1000);
+    }
+#endif
 
 #if 0
     for (;;) {
@@ -72,7 +196,7 @@ int main(void) {
     }
 #endif
 
-#if 1
+#if 0
     for (;;) {
         // Receive packets using HLAPI
         lora_listen(&lora0);

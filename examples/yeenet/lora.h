@@ -1,6 +1,6 @@
 #pragma once
 
-#define LORA_PACKET_SIZE 15
+#define LORA_PACKET_SIZE 255
 
 #define WRITE_MASK 0x80
 
