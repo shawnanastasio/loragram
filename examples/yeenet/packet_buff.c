@@ -32,6 +32,6 @@ struct packet *dply_pkt(struct lora_modem *lora) {
 
 void load_pkt(struct lora_modem *lora, struct packet *pkt) {
     send_msg(lora, msg_to_b(pkt));
-    listen(lora);
+    signal_listen(lora);
 }
 
