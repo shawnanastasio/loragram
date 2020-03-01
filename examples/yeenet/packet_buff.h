@@ -9,9 +9,10 @@
 #define PKT_LEN 255
 
 struct packet {
+    uint8_t src;
     uint8_t dest;
     uint8_t type;
-    uint8_t payload[PKT_LEN - 2];
+    uint8_t payload[PKT_LEN - 3];
 };
 
 uint8_t *msg_to_b(struct packet *pkt);
