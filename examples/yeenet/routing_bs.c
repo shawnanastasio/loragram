@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include "packet_buff.h"
-#include "routing_bstrp.h"
+#include "routing_bs.h"
 
 bool rcvd_pkt_state(struct lora_modem *lora, struct packet *rcvd_pkt) {
     switch(rcvd_pkt->type) {
