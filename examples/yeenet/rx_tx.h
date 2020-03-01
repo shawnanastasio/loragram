@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "lora.h"
+
 void send_msg(struct lora_modem *lora, uint8_t *msg);
 
 void listen(struct lora_modem *lora);

@@ -13,7 +13,7 @@ void listen(struct lora_modem *lora) {
 }
 
 uint8_t* recv_msg(struct lora_modem *lora) {
-    uint8_t msg[255];
+    static uint8_t msg[255];
     return msg;
 }
 
