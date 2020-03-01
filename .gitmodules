@@ -1,0 +1,3 @@
+[submodule "libminiavr"]
+	path = libminiavr
+	url = https://github.com/shawnanastasio/libminiavr.git
