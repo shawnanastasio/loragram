@@ -3,16 +3,21 @@
 #include "rx_tx.h"
 #include "routing_bs.h"
 
-bool rcvd_pkt_state(struct lora_modem *lora, struct packet *rcvd_pkt) {
+bool rcvd_pkt_dest(struct lora_modem *lora, struct packet *rcvd_pkt) {
+    return true;
+}
+
+bool rcvd_pkt_state(struct lora_modem *lora, struct packet *rcvd_pkt, uint8_t pkt_id) {
     switch(rcvd_pkt->type) {
         case DATA:
             send_ack(lora, rcvd_pkt);
             break;
         case ACK:
+            pkt_id++;
             break;
         case NAK:
+
             break;
-        case NULL_PKT:
         default:
             return false;
     }

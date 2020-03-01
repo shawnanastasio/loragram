@@ -23,7 +23,9 @@ typedef enum {
     BUSY
 } channel_state;
 
-bool rcvd_pkt_state(struct lora_modem *lora, struct packet *rcvd_pkt);
+bool rcvd_pkt_dest(struct lora_modem *lora, struct packet *rcvd_pkt);
+
+bool rcvd_pkt_state(struct lora_modem *lora, struct packet *rcvd_pkt, uint8_t pkt_id);
 
 void retransmit(struct lora_modem *lora, struct packet *pkt);
 
