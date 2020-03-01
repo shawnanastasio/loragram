@@ -63,6 +63,17 @@ int main(void) {
 
 #if 1
     for (;;) {
+        // Transmit packet using HLAPI
+        uint8_t buf[15 + 1] = "no sana no life";
+        lora_load_message(&lora0, buf);
+        lora_transmit(&lora0);
+
+        _delay_ms(1000);
+    }
+#endif
+
+#if 0
+    for (;;) {
         uint8_t buf[16];
 
         // Receive a packet
@@ -79,7 +90,7 @@ int main(void) {
         lora_read_fifo(&lora0, buf, 15, ptr);
         buf[15] = 0;
 
-        fprintf(&serial0->iostream, "Got data: %s\n", buf);
+        fprintf(&serial0->iostream, "Got data: %s\r\n", buf);
 
         _delay_ms(1000);
     }
