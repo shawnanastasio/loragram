@@ -57,6 +57,41 @@ int main(void) {
     serial_begin(serial0, 115200);
     lora_setup(&lora0, RST_PIN, SS_PIN, IRQ_PIN);
 
+#if 1
+    uint8_t buf[255];
+    for(;;){
+        for(int i = 0; i<255;i++) buf[i] = 0;
+        lora_listen(&lora0);
+        if(serial_available(serial0)!=0){
+            uint8_t n = serial_read_until(serial0, buf, sizeof(buf), '\r');
+            lora_load_message(&lora0,buf);
+            
+            uint8_t reg = lora_read_reg(&lora0,LORA_REG_OP_MODE);
+            uint8_t reg2 = lora_read_reg(lora,0x12);
+
+            // Wait for IRQ
+            fprintf(&serial0->iostream,"waiting...mode:%x irq:%x\r\n",reg,reg2);
+
+
+            fprintf(&serial0->iostream,"tranmsititng\r\n"); 
+            lora_transmit(&lora0);
+            fprintf(&serial0->iostream,"done transmitting\r\n");
+        }
+        enum lora_fifo_status msg_stat = lora_get_packet(&lora0,buf);
+        if(msg_stat == FIFO_GOOD){
+            fprintf(&serial0->iostream,"got message:\r\n");
+            fputs(buf,&serial0->iostream);
+        }else if(msg_stat == FIFO_BAD){
+            fprintf(&serial0->iostream, "bad packet\r\n");
+        }
+    }
+        
+        
+        
+        
+#endif
+
+
 #if 0
     lora_listen(&lora0);
     for (;;) {
@@ -71,7 +106,7 @@ int main(void) {
     }
 #endif
 
-#if 1
+#if 0
     fputs("Press any key to send a message.\r\n", &serial0->iostream);
     lora_listen(&lora0);
     for (;;) {

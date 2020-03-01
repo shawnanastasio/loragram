@@ -136,6 +136,8 @@ const static uint8_t DEFAULT_MODEM_CONFIG[][2] = {
 // High-level LoRA API
 //
 
+#define CUR_MODEM_CONFIG DEFAULT_MODEM_CONFIG
+
 bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin) {
     lora->rst_pin = rst_pin;
     lora->cs_pin = cs_pin;
@@ -176,10 +178,10 @@ bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_
     }
 
     // Set registers
-    for (size_t i=0; i<ARRAY_SIZE(LONGR_MODEM_CONFIG); i++) {
-        if (!lora_write_reg_and_check(lora, LONGR_MODEM_CONFIG[i][0], LONGR_MODEM_CONFIG[i][1], false)) {
+    for (size_t i=0; i<ARRAY_SIZE(CUR_MODEM_CONFIG); i++) {
+        if (!lora_write_reg_and_check(lora, CUR_MODEM_CONFIG[i][0], CUR_MODEM_CONFIG[i][1], false)) {
 #ifdef DEBUG
-            fprintf(&serial0->iostream, "Failed to write reg: 0x%x\r\n", LONGR_MODEM_CONFIG[i][0]);
+            fprintf(&serial0->iostream, "Failed to write reg: 0x%x\r\n", CUR_MODEM_CONFIG[i][0]);
 #endif
             return false;
         }
@@ -219,9 +221,11 @@ bool lora_transmit(struct lora_modem *lora) {
     // Configure DIO0 to interrupt on TXDONE, switch to TX mode
     lora_write_reg(lora, REG_DIO_MAPPING_1, 0x40 /* TXDONE */);
     lora_write_reg(lora, LORA_REG_OP_MODE, MODE_LORA | MODE_TX);
+    uint8_t reg = lora_read_reg(lora,LORA_REG_OP_MODE);
+    uint8_t reg2 = lora_read_reg(lora,0x12);
 
     // Wait for IRQ
-    while (lora->irq_seen);
+    while (lora->irq_seen) fprintf(&serial0->iostream,"waiting...mode:%x irq:%x\r\n",reg,reg2);
     bool ret = lora->irq_data == LORA_MASK_IRQFLAGS_TXDONE;
     lora->irq_seen = true;
 
@@ -229,6 +233,7 @@ bool lora_transmit(struct lora_modem *lora) {
 }
 
 void lora_listen(struct lora_modem *lora) {
+    lora_write_reg(lora, REG_DIO_MAPPING_1, 0x00 /* RXDONE */);
     lora_write_reg(lora,LORA_REG_OP_MODE,MODE_LORA | MODE_RXCON);
     lora->irq_seen = true; //reset irq flag
 }
