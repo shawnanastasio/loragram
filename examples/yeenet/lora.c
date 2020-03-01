@@ -30,36 +30,6 @@ ISR(INT0_vect) {
     int0_modem->irq_seen = false;
 }
 
-void listen(struct lora_modem *lora){
-    lora_write_reg(lora,LORA_REG_OP_MODE,MODE_LORA | MODE_RXCON);
-    lora->irq_seen = true; //reset irq flag
-}
-
-enum fifo_status {
-    FIFO_GOOD,
-    FIFO_BAD,
-    FIFO_EMPTY
-};
-
-enum fifo_status get_packet(struct lora_modem *lora, uint8_t buf_out[LORA_PACKET_SIZE]) {
-    
-    uint8_t data = lora->irq_data;
-    if (lora->irq_seen) 
-        return FIFO_EMPTY;
-    lora->irq_seen = true;
-    
-    if (!(data & LORA_MASK_IRQFLAGS_RXDONE))
-        return FIFO_BAD;
-    
-    if (data & LORA_MASK_IRQFLAGS_PAYLOADCRCERROR)
-        return FIFO_BAD;
-
-    // FIFO contains valid packet, return it
-
-    lora_read_fifo(lora, buf_out, LORA_PACKET_SIZE, 0);
-    return FIFO_GOOD;
-}
-
 const static uint8_t LONGR_MODEM_CONFIG[][2] = {
     // Configure PA_BOOST with max power
     {LORA_REG_PA_CONFIG, 0x8f},
@@ -256,6 +226,29 @@ bool lora_transmit(struct lora_modem *lora) {
     lora->irq_seen = true;
 
     return ret;
+}
+
+void lora_listen(struct lora_modem *lora) {
+    lora_write_reg(lora,LORA_REG_OP_MODE,MODE_LORA | MODE_RXCON);
+    lora->irq_seen = true; //reset irq flag
+}
+
+enum lora_fifo_status lora_get_packet(struct lora_modem *lora, uint8_t buf_out[LORA_PACKET_SIZE]) {
+    uint8_t data = lora->irq_data;
+    if (lora->irq_seen)
+        return FIFO_EMPTY;
+    lora->irq_seen = true;
+
+    if (!(data & LORA_MASK_IRQFLAGS_RXDONE))
+        return FIFO_BAD;
+
+    if (data & LORA_MASK_IRQFLAGS_PAYLOADCRCERROR)
+        return FIFO_BAD;
+
+    // FIFO contains valid packet, return it
+    uint8_t ptr = lora_read_reg(lora, LORA_REG_FIFO_RX_CUR_ADDR);
+    lora_read_fifo(lora, buf_out, LORA_PACKET_SIZE, ptr);
+    return FIFO_GOOD;
 }
 
 //

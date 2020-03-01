@@ -61,12 +61,32 @@ int main(void) {
     }
 #endif
 
-#if 1
+#if 0
     for (;;) {
         // Transmit packet using HLAPI
         uint8_t buf[15 + 1] = "no sana no life";
         lora_load_message(&lora0, buf);
         lora_transmit(&lora0);
+
+        _delay_ms(1000);
+    }
+#endif
+
+#if 1
+    for (;;) {
+        // Receive packets using HLAPI
+        lora_listen(&lora0);
+
+        enum lora_fifo_status ret;
+        uint8_t buf[LORA_PACKET_SIZE + 1];
+        while ((ret = lora_get_packet(&lora0, buf)) == FIFO_EMPTY);
+
+        if (ret == FIFO_BAD) {
+            fputs("Bad packet received\r\n", &serial0->iostream);
+        } else {
+            buf[LORA_PACKET_SIZE] = '\0';
+            fprintf(&serial0->iostream, "Got data: %s\r\n", buf);
+        }
 
         _delay_ms(1000);
     }
