@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "rx_tx.h"
-#include "pkt_buff.h"
+#include "packet_buff.h"
 
 uint8_t *msg_to_b(struct packet *pkt) {
     static uint8_t msg[PKT_LEN];
@@ -29,12 +29,7 @@ struct packet *dply_msg(struct lora_modem *lora) {
 }
 
 void load_msg(struct lora_modem *lora, struct packet *pkt) {
-
-
+    send_msg(lora, msg_to_b(pkt));
     listen(lora);
 }
-
-
-
-
 
