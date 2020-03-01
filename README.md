@@ -1,7 +1,7 @@
 # Loragram: A low power, cost-effective digital radio communicator
 ---
 ## Purpose
-Many locations lack robust communications infrastructure. Even in areas with widespread communcations infrastructure blackouts can still occur. Services like the American Radio Relay League (ARRL) prepare for exactly these kinds of scenarios. Members of the ARRL receive emergency communications training to relay messages using analog voice modulation. However, the necessary hardware and training are not accessible to the average person. Loragram aims to resolve this by leveraging cheap off-the-shelf open source hardware. Loragram paired with a suite of open source software can provide a simple way to communicate with others at a distance when other infrastructure is not available. 
+Many locations lack robust communications infrastructure. Even in areas with widespread communications infrastructure blackouts can still occur. Services like the American Radio Relay League (ARRL) prepare for exactly these kinds of scenarios. Members of the ARRL receive emergency communications training to relay messages using analog voice modulation. However, the necessary hardware and training are not accessible to the average person. Loragram aims to resolve this by leveraging cheap off-the-shelf open source hardware. Loragram paired with a suite of open source software can provide a simple way to communicate with others at a distance when other infrastructure is not available. 
 
 ## Bill of Materials
 * Arduino Nano (or any other board with an atmega328p)
