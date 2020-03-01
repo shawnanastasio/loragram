@@ -18,7 +18,7 @@ uint8_t *msg_to_b(struct packet *pkt);
 
 struct packet *b_to_msg(uint8_t *msg);
 
-struct packet *dply_msg(struct lora_modem *lora);
+struct packet *dply_pkt(struct lora_modem *lora);
 
-void load_msg(struct lora_modem *lora, struct packet *pkt);
+void load_pkt(struct lora_modem *lora, struct packet *pkt);
 

@@ -20,7 +20,7 @@ struct packet *b_to_msg(uint8_t *msg) {
     return pkt;
 }
 
-struct packet *dply_msg(struct lora_modem *lora) {
+struct packet *dply_pkt(struct lora_modem *lora) {
     if (msg_rcvd(lora)) {
         struct packet *pkt = b_to_msg(recv_msg(lora));
         return pkt;
@@ -28,7 +28,7 @@ struct packet *dply_msg(struct lora_modem *lora) {
     return NULL;
 }
 
-void load_msg(struct lora_modem *lora, struct packet *pkt) {
+void load_pkt(struct lora_modem *lora, struct packet *pkt) {
     send_msg(lora, msg_to_b(pkt));
     listen(lora);
 }
