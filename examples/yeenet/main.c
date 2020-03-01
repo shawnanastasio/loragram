@@ -66,16 +66,13 @@ int main(void) {
             uint8_t n = serial_read_until(serial0, buf, sizeof(buf), '\r');
             lora_load_message(&lora0,buf);
 
-            uint8_t reg = lora_read_reg(&lora0,LORA_REG_OP_MODE);
-            uint8_t reg2 = lora_read_reg(&lora0, 0x12);
 
             // Wait for IRQ
-            fprintf(&serial0->iostream,"waiting...mode:%x irq:%x\r\n",reg,reg2);
 
 
-            fprintf(&serial0->iostream,"tranmsititng\r\n");
+            //fprintf(&serial0->iostream,"transmiting\r\n");
             lora_transmit(&lora0);
-            fprintf(&serial0->iostream,"done transmitting\r\n");
+            fprintf(&serial0->iostream,"sent: %s\r\n",buf);
             lora_listen(&lora0);
         }
 
