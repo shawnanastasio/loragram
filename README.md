@@ -1,0 +1,3 @@
+# LoRa-gram: A low power, cost-effective digital radio communicator
+---
+## Many locations lack robust communications infrastructure. Even in areas with widepsread communcations infrastructure blackouts can still occur. Services like the American Radio Relay League prepare for exactly these kinds of scenarios. Members of the ARRL recieve emergency communications  traning to relay messages using analog voice modulation. However, the neccessary hardware and training are not accessible to the average person. LoRa-gram aims to resolve thisby leveraging cheap off-the-shelf open source hardware. LoRa-gram paired with a suite of open source software can provide a simple way to communicate with others at a distance when other infrastructure is not available. 
