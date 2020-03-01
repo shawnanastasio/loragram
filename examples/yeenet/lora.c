@@ -149,6 +149,8 @@ bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_
     pin_mode(rst_pin, OUTPUT);
     pin_mode(cs_pin, OUTPUT);
     pin_mode(irq_pin, INPUT);
+    digital_write(rst_pin, 0);
+    _delay_ms(10);
     digital_write(rst_pin, 1);
 
     // TODO: Allow user-configurable interrupt pins
