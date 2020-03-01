@@ -21,7 +21,35 @@ Many locations lack robust communications infrastructure. Even in areas with wid
 | MISO | 12 |
 | SCK | 13 |
 
-**libminiavr** provides serial and gpio libraries. **spi_master.h** provides access to the spi interface of the atmega328p. **lora.h** uses **spi_master.h** to provide a way to read/write registers on the chip and exposes high level API functions. **main.c** runs an event loop to permit the user to transmit and recieve messages.
+`libminiavr` provides serial and gpio libraries. **spi_master.h** provides access to the spi interface of the atmega328p. **lora.h** uses **spi_master.h** to provide a way to read/write registers on the chip and exposes high level API functions. **main.c** runs an event loop to permit the user to transmit and recieve messages.
+
+Usage
+------
+Loragram can be built on any system with GNU make and the avr-gcc toolchain.
+
+To get started, clone the repository:
+```
+$ git clone --recursive https://github.com/shawnanastasio/loragram
+```
+
+Next, build the included `libminiavr` library and the loragram project:
+```
+$ cd loragram/libminiavr
+$ make
+$ cd ..
+$ make
+```
+
+With the project built, you can install it to a connected Arduino Nano using the `upload` target:
+```
+$ make upload PORT=/dev/ttyUSBx
+```
+Replace `/dev/ttyUSBx` with the serial port that your Arduino is connected to. (e.g. `COMx` on Windows or `/dev/cu.usbserialX` on macOS).
+
+Once the program is uploaded, you can interact with it using any standard serial terminal program configured for 115200 baud. To use it with GNU screen, just run:
+```
+$ screen /dev/ttyUSBx 115200
+```
 
 ## Notes
 * The reset pin on the adafruit breakout board must be held LOW in order for the device to function, contrary to the instructions on the adafruit website.
