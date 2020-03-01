@@ -2,6 +2,15 @@
 
 #include "lora.h"
 
+#define PKT_LEN 255
+
+struct packet {
+    uint8_t src;
+    uint8_t dest;
+    uint8_t type;
+    uint8_t payload[PKT_LEN - 3];
+};
+
 typedef enum {
     NULL_PKT,
     DATA,

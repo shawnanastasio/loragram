@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "packet_buff.h"
+#include "rx_tx.h"
 #include "routing_bs.h"
 
 bool rcvd_pkt_state(struct lora_modem *lora, struct packet *rcvd_pkt) {
@@ -29,6 +29,7 @@ void send_ack(struct lora_modem *lora, struct packet *rcvd_pkt) {
     ack_pkt->dest = rcvd_pkt->src;
     ack_pkt->type = ACK;
     memset(&(ack_pkt->payload), 0, PKT_LEN - 3);
+    send_msg(lora, (uint8_t*) ack_pkt);
 }
 
 bool timeout() {
