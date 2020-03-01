@@ -1,5 +1,7 @@
 #pragma once
 
+#define LORA_PACKET_SIZE 255
+
 #define WRITE_MASK 0x80
 
 #define LORA_REG_FIFO 0x00
@@ -52,6 +54,8 @@
 #define LORA_REG_MAX_PAYLOAD_LENGTH 0x23
 #define LORA_REG_HOP_PERIOD 0x24
 
+#define LORA_REG_RSSI_WIDEBAND 0x2C
+
 #define LORA_REG_DETECT_OPTIMIZE 0x31
 
 #define LORA_REG_DETECTION_THRESHOLD 0x37
@@ -65,14 +69,21 @@ struct lora_modem {
     uint8_t rst_pin;
     uint8_t cs_pin;
     uint8_t irq_pin;
+
+    volatile uint8_t irq_data;
+    volatile bool irq_seen;
 };
 
 bool lora_setup(struct lora_modem *lora, uint8_t rst_pin, uint8_t cs_pin, uint8_t irq_pin);
 
-void lora_write_fifo(struct lora_modem *lora, uint8_t* buf, uint8_t len, uint8_t offset);
+void lora_write_fifo(struct lora_modem *lora, uint8_t *buf, uint8_t len, uint8_t offset);
 void lora_read_fifo(struct lora_modem *lora, uint8_t *buf, uint8_t len, uint8_t offset);
 
 uint8_t lora_read_reg(struct lora_modem *lora, uint8_t reg);
 void lora_write_reg(struct lora_modem *lora, uint8_t reg, uint8_t val);
 bool lora_write_reg_and_check(struct lora_modem *lora, uint8_t reg, uint8_t val, bool delay);
 
+void seed_random(struct lora_modem *lora);
+uint32_t rand_32();
+
+void lora_dbg_print_irq(uint8_t data);
