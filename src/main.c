@@ -32,12 +32,24 @@
 #include "libminiavr.h"
 #include "spi_master.h"
 #include "lora.h"
+#include "lora_config.h"
+#include "sx127x.h"
 
 #define RST_PIN 9
 #define SS_PIN 10
 #define IRQ_PIN 2
 
 static struct lora_modem lora0;
+
+static struct modulation_config short_range_config = {
+	SF6,
+	chiprate_500000,
+	CR4_5,
+	false, //disable header
+	true, //enable crc
+	8,
+	255
+};
 
 static void serial_flush(struct serial_port *serial) {
     while (serial_available(serial)) {
@@ -51,232 +63,88 @@ enum serial_command {
     CMD_SEND = 2,
     CMD_GET
 };
+volatile bool flag = false;
+void done_rx(struct lora_modem *lora){
+	//uint8_t data = lora->irq_data;
+	//lora->irq_seen = true;
+	//lora_dbg_print_irq(data);
+	//fprintf(&serial0->iostream,"reception complete");
+	flag = true;
+}
+
+void done_tx(struct lora_modem *lora){
+	//uint8_t data = lora->irq_data;
+	lora->irq_seen = true;
+	//lora_dbg_print_irq(data);
+	//fprintf(&serial0->iostream,"transmission complete");
+	flag = true;
+}
 
 int main(void) {
     // Initalize USART0 at 115200 baud
-    serial_begin(serial0, 115200);
-    lora_setup(&lora0, RST_PIN, SS_PIN, IRQ_PIN);
-
+    serial_begin(serial0, 115200);//115200);
+    lora_setup(&lora0, RST_PIN, SS_PIN, IRQ_PIN, &short_range_config, &done_rx, &done_tx);
+	
 #if 1
     uint8_t buf[255];
     lora_listen(&lora0);
     for(;;){
         for(int i = 0; i<255;i++) buf[i] = 0;
         if(serial_available(serial0)!=0){
-            uint8_t n = serial_read_until(serial0, buf, sizeof(buf), '\r');
-            lora_load_message(&lora0,buf);
+            serial_read_until(serial0, buf, sizeof(buf), '\r');
+            
+            uint8_t plen = 0;
+            bool move = true;
+            while(plen<255 && move){
+				if(buf[plen]=='\n') move = false;
+				plen++;	
+			}
+			uint8_t lora_mode;
+			lora_mode = lora_read_reg(&lora0,LORA_REG_OP_MODE);
+			fprintf(&serial0->iostream,"lora mode before fifo write: %x\r\n",lora_mode);
+			
+			fprintf(&serial0->iostream,"in buffer: %s\r\n",buf);
+            lora_set_payload(&lora0,buf,plen);
+            uint8_t test_buf[255];
+            lora_read_fifo(&lora0,test_buf,255,0);
+            
+            fprintf(&serial0->iostream,"in fifo: %s\r\n",test_buf);
 
 
             // Wait for IRQ
 
 
-            //fprintf(&serial0->iostream,"transmiting\r\n");
+            fprintf(&serial0->iostream,"transmiting\r\n");
+            flag = false;
             lora_transmit(&lora0);
-            fprintf(&serial0->iostream,"sent: %s\r\n",buf);
+            while(!flag){
+				/*
+				uint8_t state = lora_read_reg(&lora0,REG_DIO_MAPPING_1);
+				int8_t object_state = (&lora0)->irq_mode;
+				uint8_t mode = lora_read_reg(&lora0,LORA_REG_OP_MODE);
+				fprintf(&serial0->iostream,"register: %x\r\n",state);
+				fprintf(&serial0->iostream,"object info: %x\r\n",object_state);
+				fprintf(&serial0->iostream,"waiting\r\n");
+				fprintf(&serial0->iostream,"mode:%x\r\n",mode);*/
+            }
+            fprintf(&serial0->iostream,"sent: ");
+            fwrite(buf,plen,1,&serial0->iostream);
             lora_listen(&lora0);
         }
-
-        enum lora_fifo_status msg_stat = lora_get_packet(&lora0,buf);
+		uint8_t expected_length = 0;
+        enum lora_fifo_status msg_stat = lora_get_payload(&lora0,buf,&expected_length);
         //fprintf(&serial0->iostream,"packet stat: %x\r\n",msg_stat);
 
         if (msg_stat == FIFO_GOOD) {
-            fprintf(&serial0->iostream,"got message: %s\r\n", buf);
+            fprintf(&serial0->iostream,"got message:");
+			fwrite(buf,expected_length,1,&serial0->iostream);
         } else if(msg_stat == FIFO_BAD) {
             fprintf(&serial0->iostream, "bad packet\r\n");
         }
-        _delay_ms(500);
+        
+		//fprintf(&serial0->iostream,"hi\r\n");
+        _delay_ms(50);
     }
 #endif
 
-#if 0
-    lora_listen(&lora0);
-    for (;;) {
-        // Receive command
-        while (serial_available(serial0) == 0);
-
-        uint8_t cmd;
-        serial_read_blocking(serial0, &cmd, 1);
-        switch(cmd) {
-
-        }
-    }
-#endif
-
-#if 0
-    fputs("Press any key to send a message.\r\n", &serial0->iostream);
-    lora_listen(&lora0);
-    for (;;) {
-        // Check if user input is available
-        if (serial_available(serial0) > 0) {
-            serial_flush(serial0);
-
-            // Prompt user for information
-            uint8_t recip[10];
-            uint8_t location[10];
-            uint8_t message[235];
-            uint8_t confirmation[2];
-
-            fputs("Recipient: ", &serial0->iostream);
-            uint8_t n = serial_read_until(serial0, recip, sizeof(recip), '\r');
-            recip[n - 1] = '\0';
-            serial_flush(serial0);
-            fputs("\r\n", &serial0->iostream);
-
-            fputs("Location: ", &serial0->iostream);
-            n = serial_read_until(serial0, location, sizeof(location), '\r');
-            location[n - 1] = '\0';
-            serial_flush(serial0);
-            fputs("\r\n", &serial0->iostream);
-
-            fputs("Message: ", &serial0->iostream);
-            n = serial_read_until(serial0, message, sizeof(message), '\r');
-            message[n - 1] = '\0';
-            serial_flush(serial0);
-            fputs("\r\n", &serial0->iostream);
-
-            // Format message and prompt for confirmation
-            fprintf(&serial0->iostream, "Recipient: %s\r\nLocation: %s\r\nMessage: %s\r\n", recip, location, message);
-            fputs("Send? (y/n) ", &serial0->iostream);
-            n = serial_read_until(serial0, confirmation, sizeof(confirmation), '\r');
-            confirmation[n - 1] = '\0';
-            serial_flush(serial0);
-            fputs("\r\n", &serial0->iostream);
-
-            if (confirmation[0] == 'y') {
-                fputs("Sending message.\r\n", &serial0->iostream);
-                uint8_t msgbuf[255];
-                memcpy(msgbuf, recip, sizeof(recip));
-                memcpy(msgbuf, location, sizeof(location));
-                memcpy(msgbuf, message, sizeof(message));
-
-                // Send message
-                lora_load_message(&lora0, msgbuf);
-                lora_transmit(&lora0);
-
-                // Switch back to listen mode
-                lora_listen(&lora0);
-            } else {
-                fputs("Cancelled.\r\n", &serial0->iostream);
-            }
-        }
-
-        // See if any packets were received
-        struct {
-            uint8_t recip[10];
-            uint8_t location[10];
-            uint8_t message[235];
-        } buf;
-
-        enum lora_fifo_status ret = lora_get_packet(&lora0, (uint8_t *)&buf);
-
-        if (ret == FIFO_BAD) {
-            fputs("Corrupted message received.\r\n", &serial0->iostream);
-        } else if (ret == FIFO_GOOD) {
-            fputs("Received Message!", &serial0->iostream);
-
-            fprintf(&serial0->iostream, "Recipient: %s\r\nLocation:%s\r\nMessage: %s\r\n", buf.recip, buf.location, buf.message);
-        }
-    }
-#endif
-
-#if 1
-    for (;;) {
-        // Receive packets using HLAPI
-        lora_listen(&lora0);
-
-        enum lora_fifo_status ret;
-        uint8_t buf[LORA_PACKET_SIZE + 1];
-        while ((ret = lora_get_packet(&lora0, buf)) == FIFO_EMPTY);
-
-        if (ret == FIFO_BAD) {
-            fputs("Bad packet received\r\n", &serial0->iostream);
-        } else {
-            buf[LORA_PACKET_SIZE] = '\0';
-            fprintf(&serial0->iostream, "Got data: %s\r\n", buf);
-        }
-
-        _delay_ms(1000);
-    }
-#endif
-
-#if 0
-    for (;;) {
-        // Transmit a packet
-        uint8_t buf[15 + 1] = "no sana no life";
-        lora_write_fifo(&lora0, buf, 15, 0);
-        lora_write_reg(&lora0, REG_DIO_MAPPING_1, 0x40 /* TXDONE */);
-        lora_write_reg(&lora0, LORA_REG_OP_MODE, MODE_LORA | MODE_TX);
-
-        while (lora0.irq_seen);
-        fputs("GOT IRQ!\r\n", &serial0->iostream);
-        lora_dbg_print_irq(lora0.irq_data);
-        lora0.irq_seen = true;
-
-        _delay_ms(1000);
-    }
-#endif
-
-#if 0
-    for (;;) {
-        // Transmit packet using HLAPI
-        uint8_t buf[15 + 1] = "no sana no life";
-        lora_load_message(&lora0, buf);
-        lora_transmit(&lora0);
-
-        _delay_ms(1000);
-    }
-#endif
-
-#if 0
-    for (;;) {
-        // Receive packets using HLAPI
-        lora_listen(&lora0);
-
-        enum lora_fifo_status ret;
-        uint8_t buf[LORA_PACKET_SIZE + 1];
-        while ((ret = lora_get_packet(&lora0, buf)) == FIFO_EMPTY);
-
-        if (ret == FIFO_BAD) {
-            fputs("Bad packet received\r\n", &serial0->iostream);
-        } else {
-            buf[LORA_PACKET_SIZE] = '\0';
-            fprintf(&serial0->iostream, "Got data: %s\r\n", buf);
-        }
-
-        _delay_ms(1000);
-    }
-#endif
-
-#if 0
-    for (;;) {
-        uint8_t buf[16];
-
-        // Receive a packet
-        lora_write_reg(&lora0, LORA_REG_OP_MODE, MODE_LORA | MODE_RXCON);
-        lora_write_reg(&lora0, REG_DIO_MAPPING_1, 0x00 /* RXDONE */);
-
-        while (lora0.irq_seen);
-        fputs("GOT IRQ!\r\n", &serial0->iostream);
-        lora_dbg_print_irq(lora0.irq_data);
-        lora0.irq_seen = true;
-
-        // Get FIFO ptr and read
-        uint8_t ptr = lora_read_reg(&lora0, LORA_REG_FIFO_RX_CUR_ADDR);
-        lora_read_fifo(&lora0, buf, 15, ptr);
-        buf[15] = 0;
-
-        fprintf(&serial0->iostream, "Got data: %s\r\n", buf);
-
-        _delay_ms(1000);
-    }
-#endif
-
-#if 0
-    for (;;) {
-        uint8_t val = lora_read_reg(&lora0, 0x01);
-        fprintf(&serial0->iostream, "val of 0x01: %x\r\n", val);
-        _delay_ms(1000);
-    }
-#endif
-    for(;;);
 }

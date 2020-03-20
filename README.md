@@ -54,6 +54,10 @@ $ screen /dev/ttyUSBx 115200
 ## Notes
 * The reset pin on the adafruit breakout board must be held LOW in order for the device to function, contrary to the instructions on the adafruit website.
 * The reset pin must be pulled low momentarily in order to reset the device when the mcu reboots. This guarantees registers are reset to the original state. Failing to do this can cause weird behavior.
-* In order to clear the IRQ flags register, zeros must be written twice over SPI. This is  a hardware bug.
+* In order to clear the IRQ flags register, zeros must be written twice over SPI. This is a hardware bug.
 * The atmega328p SPI interface will not function if the data direction (pin mode) of SCK, MISO, and MOSI are not set correctly.
 * If the SS pin on the atmega328p (PB2 or arduino pin 10) is an input in SPI master mode and is driven low, the SPI interface will switch to the slave mode. This is documented in the atmega328p datasheet on page 139.
+* The SX127x module defaults to FSK/OOK mode, not LoRa mode. In order to enter LoRa mode the LongRangeMode bit in RegOpMode must be set.
+* Additionally, the bottom three mode bits, labelled "Mode" in the datasheet must reflect a "SLEEP" state when writing to RegOpMode when enabling LoRa mode. If the LoRa's first mode request is not sleep, the write to the register will not be successful. Not even STANDBY can be the first mode. Always SLEEP.
+* LoRa FIFO can only be accessed in STANDBY mode
+* 

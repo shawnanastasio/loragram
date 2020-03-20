@@ -24,7 +24,7 @@ PARTNO:=$(MCU)
 
 include libminiavr/board.inc
 
-CFLAGS:=-mmcu=$(MCU) -D$(BOARD) -DF_CPU=$(F_CPU) -Os -Wall
+CFLAGS:=-mmcu=$(MCU) -D$(BOARD) -DDEBUG -DF_CPU=$(F_CPU) -Os -Wall
 
 .PHONY all: checklibrary $(HEX)
 
